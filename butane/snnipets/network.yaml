@@ -1,0 +1,192 @@
+variant: fcos
+version: 1.4.0
+storage:
+  files:
+    - path: /etc/NetworkManager/conf.d/noauto.conf
+      mode: 0644
+      contents:
+        inline: |
+          [main]
+          no-auto-default=*
+    - path: /etc/systemd/network/25-eth0.link
+      mode: 0644
+      contents:
+        inline: |
+          [Match]
+          MACAddress=${eth0_mac}
+          [Link]
+          Name=eth0
+    - path: /etc/systemd/resolved.conf
+      overwrite: true
+      mode: 0644
+      contents:
+        inline: |
+          [Resolve]
+          DNS=${dns}
+    - path: /etc/bird/bird.conf
+      mode: 0644
+      contents:
+        inline: |
+          log syslog all;
+          router id ${primary_ipv4};
+
+          watchdog warning 5 s;
+          watchdog timeout 30 s;
+
+          protocol device {
+            scan time 60;
+          }
+          protocol bfd {
+            interface "*" {
+              min rx interval 1 s;
+              min tx interval 1 s;
+            };
+          }
+
+          protocol direct node {
+            ipv4;
+            ipv6;
+            interface "node0";
+          }
+          protocol direct purelb {
+            ipv4;
+            ipv6;
+            interface "kube-lb0";
+          }
+
+          filter outside {
+            if source = RTS_DEVICE then reject;
+            if proto = "cilium4" || proto = "cilium6" then reject;
+            accept;
+          }
+          protocol kernel {
+            merge paths;
+            ipv4 {
+              export filter outside;
+            };
+          }
+          protocol kernel {
+            merge paths;
+            ipv6 {
+              export filter outside;
+            };
+          }
+
+          template bgp sw {
+            local as ${local_asn};
+            bfd;
+            ipv4 {
+              import all;
+              export all;
+            };
+            ipv6 {
+              import all;
+              export all;
+            };
+          }
+          protocol bgp sw1 from sw {
+            neighbor ${peer1} as ${peer1_asn};
+            ipv6 {
+              next hop address ${peer1_nexthop_ipv6};
+            };
+          }
+          protocol bgp sw2 from sw {
+            neighbor ${peer2} as ${peer2_asn};
+            ipv6 {
+              next hop address ${peer2_nexthop_ipv6};
+            };
+          }
+    - path: /opt/sbin/setup-network
+      mode: 0755
+      contents:
+        inline: |
+          #!/bin/sh
+
+          # node0
+          ip link add node0 type dummy
+          ip link set node0 up
+          ip address add ${primary_ipv4}/32 dev node0
+          ip address add ${primary_ipv6}/128 dev node0
+
+          # eth0
+          ip link set eth0 up
+          ip address add ${eth0_ipv4}/24 dev eth0 scope link
+          ip address add ${eth0_ipv6}/64 dev eth0 scope link
+    - path: /opt/sbin/load-bird-image
+      mode: 0755
+      contents:
+        inline: |
+          #!/bin/sh
+
+          img="${bird_img}"
+          file=/tmp/bird.tar.gz
+          for i in $(seq 20); do
+            if [ $i -gt 20 ]; then
+              echo "failed to fetch BIRD image"
+              exit 1
+            fi
+            if curl -sfSL -o "$file" "$img"; then
+              gzip -cd "$file" | /usr/bin/podman load
+              break
+            fi
+            sleep 5
+          done
+          rm -f "$file"
+systemd:
+  units:
+    - name: setup-network.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=Setup Network
+        Wants=network.target
+        After=network-pre.target
+        Before=network.target
+
+        [Service]
+        Type=oneshot
+        ExecStart=/opt/sbin/setup-network
+        RemainAfterExit=yes
+
+        [Install]
+        WantedBy=multi-user.target
+    - name: bird-image.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=Download BIRD Image
+        Wants=network.target
+        After=network.target
+
+        [Service]
+        Type=oneshot
+        ExecStart=/opt/sbin/load-bird-image
+        RemainAfterExit=yes
+
+        [Install]
+        WantedBy=multi-user.target
+    - name: bird.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=BIRD
+        Wants=network.target
+        After=network.target bird-image.service
+
+        [Service]
+        ExecStartPre=-/usr/bin/podman kill bird
+        ExecStartPre=-/usr/bin/podman rm bird
+        ExecStart=/usr/bin/podman run \
+          --name=bird \
+          --net=host \
+          --cap-add=NET_ADMIN \
+          --cap-add=NET_BIND_SERVICE \
+          --cap-add=NET_RAW \
+          --mount=type=tmpfs,destination=/run/bird \
+          --mount=type=bind,source=/etc/bird/bird.conf,target=/etc/bird/bird.conf \
+          quay.io/cybozu/bird:2.0
+        ExecStop=/usr/bin/podman stop bird
+
+        [Install]
+        WantedBy=multi-user.target
+

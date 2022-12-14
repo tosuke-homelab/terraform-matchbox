@@ -1,0 +1,17 @@
+variant: fcos
+version: 1.4.0
+passwd:
+  users:
+    - name: core
+      password_hash: ${password_hash}
+      ssh_authorized_keys:
+        - ${ssh_authorized_key}
+storage:
+  files:
+    - path: /etc/selinux/config
+      overwrite: true
+      mode: 0644
+      contents:
+        inline: |
+          SELINUX=permissive
+          SELINUXTYPE=targeted
