@@ -27,7 +27,7 @@ storage:
       mode: 0644
       contents:
         inline: |
-          log syslog all;
+          log stderr all;
           router id ${primary_ipv4};
 
           watchdog warning 5 s;
