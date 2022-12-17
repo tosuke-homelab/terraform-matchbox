@@ -2,19 +2,8 @@ matchbox_http_endpoint = "http://matchbox.tosuke.internal:8080"
 matchbox_rpc_endpoint = "192.168.1.5:8081"
 os_version = "37.20221106.3.0"
 # os_version = "36.20220906.3.2"
-password_hash = ""
+password_hash = "$y$j9T$orJi/CcCxSzOVMBpL4/7X.$38t0aPhIHzOnXPCQJyAQ.iOyRg/hUh/YQE9kUnx3SZ."
 ssh_authorized_key = "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIH7Xo5JiR3JlbOXR92t4ge40/ik9IEhTbeoMvaI98VzbAAAABHNzaDo="
-
-peers = [
-    {
-        asn = 65100
-        ipv4 = "192.168.20.100"
-    },
-    {
-        asn = 65100
-        ipv4 = "192.168.20.101"
-    }
-]  
 
 nodes = {
     kodaka = {

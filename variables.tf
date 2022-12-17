@@ -23,14 +23,6 @@ variable "ssh_authorized_key" {
   description = "SSH Public key"
 }
 
-variable "peers" {
-  type = list(object({
-    asn = number
-    ipv4 = string
-  }))
-  description = "List of peers"
-}
-
 variable "nodes" {
   type = map(object({
     arch = string
