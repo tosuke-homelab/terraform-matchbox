@@ -7,6 +7,11 @@ passwd:
       ssh_authorized_keys:
         - ${ssh_authorized_key}
 storage:
+  filesystems:
+    - device: /dev/disk/by-partlabel/system
+      format: ext4
+  directories:
+    - path: /var/mnt/system
   files:
     - path: /etc/selinux/config
       overwrite: true
@@ -15,3 +20,57 @@ storage:
         inline: |
           SELINUX=permissive
           SELINUXTYPE=targeted
+systemd:
+  units:
+    - name: var-mnt-system.mount
+      enabled: true
+      contents: |
+        [Mount]
+        What=/dev/disk/by-partlabel/system
+        Where=/var/mnt/system
+        Type=ext4
+
+        [Install]
+        WantedBy=local-fs.target
+    - name: var-log.mount
+      enabled: true
+      contents: |
+        [Unit]
+        After=mnt-system.mount
+
+        [Mount]
+        What=/var/mnt/system/var/log
+        Where=/var/log
+        Type=none
+        Options=bind
+
+        [Install]
+        WantedBy=local-fs.target
+    - name: var-lib-containers.mount
+      enabled: true
+      contents: |
+        [Unit]
+        After=mnt-system.mount
+
+        [Mount]
+        What=/var/mnt/system/var/lib/containers
+        Where=/var/lib/containers
+        Type=none
+        Options=bind
+
+        [Install]
+        WantedBy=local-fs.target
+    - name: var-lib-k0s.mount
+      enabled: true
+      contents: |
+        [Unit]
+        After=mnt-system.mount
+
+        [Mount]
+        What=/var/mnt/system/var/lib/k0s
+        Where=/var/lib/k0s
+        Type=none
+        Options=bind
+
+        [Install]
+        WantedBy=local-fs.target
