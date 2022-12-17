@@ -84,18 +84,14 @@ storage:
               export all;
             };
           }
-          protocol bgp sw1 from sw {
-            neighbor ${peer1} as ${peer1_asn};
+          %{ for key, peer in peers }
+          protocol bgp sw${key} from sw {
+            neighbor ${peer.address} as ${peer.asn};
             ipv6 {
-              next hop address ${peer1_nexthop_ipv6};
+              next hop address ${peer.nexthop_ipv6};
             };
           }
-          protocol bgp sw2 from sw {
-            neighbor ${peer2} as ${peer2_asn};
-            ipv6 {
-              next hop address ${peer2_nexthop_ipv6};
-            };
-          }
+          %{ endfor }
     - path: /opt/sbin/setup-network
       mode: 0755
       contents:
