@@ -38,8 +38,8 @@ storage:
           }
           protocol bfd {
             interface "*" {
-              min rx interval 1 s;
-              min tx interval 1 s;
+              min rx interval 300 ms;
+              min tx interval 300 ms;
             };
           }
 
