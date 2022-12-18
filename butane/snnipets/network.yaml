@@ -128,6 +128,15 @@ storage:
             sleep 5
           done
           rm -f "$file"
+    - path: /opt/sbin/wait-for-bird
+      mode: 0755
+      contents:
+        inline: |
+          #!/bin/sh
+
+          while ! podman exec bird birdc show route for 0.0.0.0/0 | grep -q "sw\d+"; do
+            sleep 1
+          done
 systemd:
   units:
     - name: setup-network.service
@@ -182,6 +191,22 @@ systemd:
           --mount=type=bind,source=/etc/bird/bird.conf,target=/etc/bird/bird.conf \
           quay.io/cybozu/bird:2.0
         ExecStop=/usr/bin/podman stop bird
+
+        [Install]
+        WantedBy=multi-user.target
+    - name: bird-wait.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=Wait for BGP connection
+        Wants=network.target
+        After=network.target bird.service
+        Before=network-online.target
+
+        [Service]
+        Type=oneshot
+        ExecStart=/opt/sbin/wait-for-bird
+        RemainAfterExit=yes
 
         [Install]
         WantedBy=multi-user.target
