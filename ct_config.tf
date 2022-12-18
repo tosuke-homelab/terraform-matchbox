@@ -1,3 +1,7 @@
+locals {
+  nil_config = "variant: fcos\nversion: 1.4.0\n"
+}
+
 data "ct_config" "nodes" {
   for_each = var.nodes
   content = file("${path.module}/butane/${each.key}.yaml")
@@ -35,5 +39,7 @@ data "ct_config" "nodes" {
         },
       ],
     }),
+    each.value.role == "worker" ? templatefile("${path.module}/butane/snnipets/worker.yaml", {
+    }) : local.nil_config,
   ]
 }

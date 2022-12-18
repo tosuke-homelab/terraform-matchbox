@@ -1,0 +1,32 @@
+variant: fcos
+version: 1.4.0
+storage:
+  files:
+    - path: /opt/sbin/setup-k0s
+      mode: 0755
+      contents:
+        source: https://get.k0s.sh
+        verification:
+          hash: sha256-0f70303c23f0f14916c68799f6971479dabc4082a0c276266be9d29ded404201
+systemd:
+  units:
+    - name: setup-k0s-worker.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=Setup k0s
+        Wants=network-online.target
+        After=network-online.target
+        ConditionPathExists=!/var/lib/setup-k0s.stamp
+ 
+        [Service]
+        Type=oneshot
+        RemainAfterExit=yes
+        Environment=K0S_VERSION=v1.25.4+k0s.0
+        ExecStart=/opt/sbin/setup-k0s
+        ExecStart=/usr/local/bin/k0s install worker --token-file /var/lib/k0s/bootstrap-token
+        ExecStart=/usr/local/bin/k0s start
+        ExecStart=/bin/touch /var/lib/setup-k0s.stamp
+ 
+        [Install]
+        WantedBy=multi-user.target

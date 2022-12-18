@@ -72,6 +72,31 @@ storage:
             };
           }
 
+          filter cilium_route {
+            ifname = "cilium_host";
+            accept;
+          }
+          template bgp cilium {
+            passive;
+            multihop;
+          }
+          protocol bgp cilium4 from cilium {
+            local as 100004;
+            neighbor 127.0.0.1 as 100000;
+            ipv4 {
+              import filter cilium_route;
+              export none;
+            };
+          }
+          protocol bgp cilium6 from cilium {
+            local as 100006;
+            neighbor ::1 as 100000;
+            ipv6 {
+              import filter cilium_route;
+              export none;
+            };
+          }
+
           template bgp sw {
             local as ${local_asn};
             bfd;
@@ -123,7 +148,7 @@ storage:
             fi
             if curl -sfSL -o "$file" "$img"; then
               gzip -cd "$file" | /usr/bin/podman load
-              break
+              exit 0
             fi
             sleep 5
           done
@@ -134,7 +159,14 @@ storage:
         inline: |
           #!/bin/sh
 
-          while ! podman exec bird birdc show route for 0.0.0.0/0 | grep -q "sw\d+"; do
+          for i in $(seq 60); do
+            if [ $i -gt 60 ]; then
+              echo "failed to retrieve default route"
+              exit 1
+            fi
+            if podman exec bird birdc show route for 0.0.0.0/0 | grep -q "sw\d+"; then
+              exit 0
+            fi
             sleep 1
           done
 systemd:
