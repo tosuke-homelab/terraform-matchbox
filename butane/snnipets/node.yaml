@@ -7,9 +7,6 @@ passwd:
       ssh_authorized_keys:
         - ${ssh_authorized_key}
 storage:
-  filesystems:
-    - device: /dev/disk/by-partlabel/system
-      format: ext4
   directories:
     - path: /var/mnt/system
   files:
