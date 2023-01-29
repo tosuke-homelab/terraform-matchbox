@@ -1,6 +1,6 @@
 matchbox_http_endpoint = "http://matchbox.tosuke.internal:8080"
-os_version = "37.20221106.3.0"
 matchbox_rpc_endpoint = "nono:8081"
+os_version = "37.20221127.3.0"
 # os_version = "36.20220906.3.2"
 password_hash = "$y$j9T$CEreOLo74cJcogiN/1CBe0$yTjA9PSQPhdN0d8SB4O8fW2173aHgS9wVdK3rUhYAID"
 ssh_authorized_key = "sk-ssh-ed25519@openssh.com AAAAGnNrLXNzaC1lZDI1NTE5QG9wZW5zc2guY29tAAAAIH7Xo5JiR3JlbOXR92t4ge40/ik9IEhTbeoMvaI98VzbAAAABHNzaDo="
