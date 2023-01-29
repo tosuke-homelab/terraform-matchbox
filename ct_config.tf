@@ -22,7 +22,8 @@ data "ct_config" "nodes" {
       eth0_ipv4 = each.value.eth0_ipv4,
       eth0_ipv6 = each.value.eth0_ipv6,
 
-      bird_img = "${var.matchbox_http_endpoint}/assets/bird/bird-${each.value.arch}.tar.gz",
+      bird_image_url = "${var.matchbox_http_endpoint}/assets/bird/bird-${each.value.arch}.tar.gz",
+      bird_image = "ghcr.io/tosuke-homelab/bird:2.0-${each.value.arch}",
 
       local_asn = each.value.asn,
 
@@ -39,7 +40,11 @@ data "ct_config" "nodes" {
         },
       ],
     }),
+    each.value.role == "controller" ? templatefile("${path.module}/butane/snnipets/controller.yaml", {
+      primary_ipv4 = each.value.primary_ipv4,
+    }) : local.nil_config,
     each.value.role == "worker" ? templatefile("${path.module}/butane/snnipets/worker.yaml", {
+      primary_ipv4 = each.value.primary_ipv4,
     }) : local.nil_config,
   ]
 }
