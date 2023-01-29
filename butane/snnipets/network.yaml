@@ -139,10 +139,10 @@ storage:
         inline: |
           #!/bin/sh
 
-          img="${bird_img}"
+          img="${bird_image_url}"
           file=/tmp/bird.tar.gz
           for i in $(seq 20); do
-            if [ $i -gt 20 ]; then
+            if [ $i -ge 20 ]; then
               echo "failed to fetch BIRD image"
               exit 1
             fi
@@ -159,13 +159,14 @@ storage:
         inline: |
           #!/bin/sh
 
-          for i in $(seq 60); do
-            if [ $i -gt 60 ]; then
+          for i in $(seq 30); do
+            if [ $i -ge 30 ]; then
               echo "failed to retrieve default route"
               exit 1
             fi
-            if podman exec bird birdc show route for 0.0.0.0/0 | grep -q "sw\d+"; then
-              exit 0
+            
+            if podman exec bird birdc show route for 0.0.0.0/0 | grep -q "sw[01]"; then
+              break
             fi
             sleep 1
           done
@@ -221,7 +222,7 @@ systemd:
           --cap-add=NET_RAW \
           --mount=type=tmpfs,destination=/run/bird \
           --mount=type=bind,source=/etc/bird/bird.conf,target=/etc/bird/bird.conf \
-          quay.io/cybozu/bird:2.0
+          ${bird_image}
         ExecStop=/usr/bin/podman stop bird
 
         [Install]
