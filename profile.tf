@@ -1,6 +1,6 @@
 resource "matchbox_profile" "nodes" {
   for_each = local.nodes
-  name = each.key
+  name     = each.key
 
   kernel = "/assets/fedora-coreos/fedora-coreos-${local.fcos.version}-live-kernel-${each.value.arch}"
   initrd = [

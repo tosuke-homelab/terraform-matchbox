@@ -1,30 +1,30 @@
 variable "MATCHBOX_RPC_ENDPOINT" {
-  type = string
+  type        = string
   description = "Matchbox RPC endpoint"
 }
 
 variable "MATCHBOX_CA_CERT" {
-  type = string
+  type        = string
   description = "Base64-encoded Matchbox CA certificate"
 }
 
 variable "MATCHBOX_CLIENT_CERT" {
-  type = string
+  type        = string
   description = "Base64-encoded Matchbox client certificate"
 }
 
 variable "MATCHBOX_CLIENT_KEY" {
-  type = string
+  type        = string
   description = "Base64-encoded Matchbox client key"
 }
 
 variable "PASSWORD_HASH" {
-  type = string
+  type        = string
   description = "Password hash"
 }
 
 variable "SSH_AUTHORIZED_KEY" {
-  type = string
+  type        = string
   description = "SSH Public key"
 }
 
@@ -37,18 +37,18 @@ locals {
     client_key    = base64decode(var.MATCHBOX_CLIENT_KEY)
   }
   fcos = {
-    version             = "37.20221127.3.0"
-    password_hash       = var.PASSWORD_HASH
-    ssh_authorized_key  = var.SSH_AUTHORIZED_KEY
+    version            = "37.20221127.3.0"
+    password_hash      = var.PASSWORD_HASH
+    ssh_authorized_key = var.SSH_AUTHORIZED_KEY
   }
   nodes = {
     hayama = {
       name = "hayama"
       arch = "aarch64"
-      mac = "dc:a6:32:72:85:8d"
+      mac  = "dc:a6:32:72:85:8d"
       role = "controller"
 
-      asn = 65001
+      asn          = 65001
       primary_ipv4 = "192.168.3.1"
       primary_ipv6 = "2400:8902:e002:5603::1"
 
@@ -58,10 +58,10 @@ locals {
     kodaka = {
       name = "kodaka"
       arch = "x86_64"
-      mac = "b4:2e:99:60:dd:51"
+      mac  = "b4:2e:99:60:dd:51"
       role = "worker"
 
-      asn = 65002
+      asn          = 65002
       primary_ipv4 = "192.168.3.2"
       primary_ipv6 = "2400:8902:e002:5603::2"
 
