@@ -1,17 +1,17 @@
 terraform {
   required_providers {
     ct = {
-      source = "poseidon/ct"
+      source  = "poseidon/ct"
       version = "0.11.0"
     }
     matchbox = {
-      source = "poseidon/matchbox"
+      source  = "poseidon/matchbox"
       version = "0.5.2"
     }
   }
 
   backend "remote" {
-    hostname = "app.terraform.io"
+    hostname     = "app.terraform.io"
     organization = "tosuke-homelab"
 
     workspaces {
