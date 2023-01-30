@@ -52,8 +52,8 @@ locals {
       primary_ipv4 = "192.168.3.1"
       primary_ipv6 = "2400:8902:e002:5603::1:0"
 
-      eth0_ipv4 = "192.168.20.2"
-      eth0_ipv6 = "fe80::2"
+      eth0_ipv4 = "192.168.20.1"
+      eth0_ipv6 = "fe80::1"
     },
     kodaka = {
       name = "kodaka"
@@ -65,8 +65,8 @@ locals {
       primary_ipv4 = "192.168.3.2"
       primary_ipv6 = "2400:8902:e002:5603::2:0"
 
-      eth0_ipv4 = "192.168.20.3"
-      eth0_ipv6 = "fe80::3"
+      eth0_ipv4 = "192.168.20.2"
+      eth0_ipv6 = "fe80::2"
     }
   }
 }
