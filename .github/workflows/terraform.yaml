@@ -3,17 +3,18 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
   terraform:
     runs-on: ubuntu-22.04
     env:
-      TF_VAR_MATCHBOX_RPC_ENDPOINT: ${{vars.MATCHBOX_RPC_ENDPOINT}}
-      TF_VAR_MATCHBOX_CA_CERT:      ${{secrets.MATCHBOX_CA_CERT}}
-      TF_VAR_MATCHBOX_CLIENT_CERT:  ${{secrets.MATCHBOX_CLIENT_CERT}}
-      TF_VAR_MATCHBOX_CLIENT_KEY:   ${{secrets.MATCHBOX_CLIENT_KEY}}
-      TF_VAR_PASSWORD_HASH:         ${{secrets.PASSWORD_HASH}}
-      TF_VAR_SSH_AUTHORIZED_KEY:    ${{vars.SSH_AUTHORIZED_KEY}}
+      TF_VAR_MATCHBOX_RPC_ENDPOINT: ${{ vars.MATCHBOX_RPC_ENDPOINT }}
+      TF_VAR_MATCHBOX_CA_CERT:      ${{ secrets.MATCHBOX_CA_CERT }}
+      TF_VAR_MATCHBOX_CLIENT_CERT:  ${{ secrets.MATCHBOX_CLIENT_CERT }}
+      TF_VAR_MATCHBOX_CLIENT_KEY:   ${{ secrets.MATCHBOX_CLIENT_KEY }}
+      TF_VAR_PASSWORD_HASH:         ${{ secrets.PASSWORD_HASH }}
+      TF_VAR_SSH_AUTHORIZED_KEY:    ${{ vars.SSH_AUTHORIZED_KEY }}
     
     steps:
       - uses: actions/checkout@v3
@@ -48,9 +49,18 @@ jobs:
           github_token: ${{ secrets.github_token }}
           reporter: github-pr-review
           fail_on_error: true
+
       - name: Terraform plan
+        if: github.event_name == 'pull_request'
         run: |
           tfcmt plan -patch -- terraform plan -no-color -lock=false
+        env:
+          GITHUB_TOKEN: ${{ secrets.github_token }}
+      
+      - name: Terraform apply
+        if: github.event_name != 'pull_request'
+        run: |
+          tfcmt apply -- terraform apply -auto-approve -no-color
         env:
           GITHUB_TOKEN: ${{ secrets.github_token }}
     
