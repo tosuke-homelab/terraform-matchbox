@@ -51,7 +51,6 @@ jobs:
           fail_on_error: true
 
       - name: Terraform plan
-        if: github.event_name == 'pull_request'
         run: |
           tfcmt plan -patch -- terraform plan -no-color -lock=false
         env:
