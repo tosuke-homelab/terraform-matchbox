@@ -1,19 +1,19 @@
 terraform {
   required_providers {
     ct = {
-        source = "poseidon/ct"
-        version = "0.11.0"
+      source = "poseidon/ct"
+      version = "0.11.0"
     }
     matchbox = {
-        source = "poseidon/matchbox"
-        version = "0.5.2"
+      source = "poseidon/matchbox"
+      version = "0.5.2"
     }
   }
 }
 
 provider "matchbox" {
-  endpoint = var.matchbox_rpc_endpoint
-  ca = file("./.matchbox/ca.crt")
-  client_cert = file("./.matchbox/client.crt")
-  client_key = file("./.matchbox/client.key")
+  endpoint    = local.matchbox.rpc_endpoint
+  ca          = local.matchbox.ca_cert
+  client_cert = local.matchbox.client_cert
+  client_key  = local.matchbox.client_key
 }

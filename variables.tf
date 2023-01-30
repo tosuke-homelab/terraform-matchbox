@@ -1,40 +1,72 @@
-variable "matchbox_http_endpoint" {
+variable "MATCHBOX_RPC_ENDPOINT" {
   type = string
-  description = "Matchbox HTTP endpoint"
+  description = "Matchbox RPC endpoint"
 }
 
-variable "matchbox_rpc_endpoint" {
+variable "MATCHBOX_CA_CERT" {
   type = string
-  description = "Matchbox gRPC endpoint"
+  description = "Base64-encoded Matchbox CA certificate"
 }
 
-variable "os_version" {
+variable "MATCHBOX_CLIENT_CERT" {
   type = string
-  description = "Fedora CoreOS version"
+  description = "Base64-encoded Matchbox client certificate"
 }
 
-variable "password_hash" {
+variable "MATCHBOX_CLIENT_KEY" {
+  type = string
+  description = "Base64-encoded Matchbox client key"
+}
+
+variable "PASSWORD_HASH" {
   type = string
   description = "Password hash"
 }
 
-variable "ssh_authorized_key" {
+variable "SSH_AUTHORIZED_KEY" {
   type = string
   description = "SSH Public key"
 }
 
-variable "nodes" {
-  type = map(object({
-    arch = string
-    mac = string
-    role = string
+locals {
+  matchbox = {
+    http_endpoint = "http://matchbox.tosuke.internal:8080"
+    rpc_endpoint  = var.MATCHBOX_RPC_ENDPOINT
+    ca_cert       = base64decode(var.MATCHBOX_CA_CERT)
+    client_cert   = base64decode(var.MATCHBOX_CLIENT_CERT)
+    client_key    = base64decode(var.MATCHBOX_CLIENT_KEY)
+  }
+  fcos = {
+    version             = "37.20221127.3.0"
+    password_hash       = var.PASSWORD_HASH
+    ssh_authorized_key  = var.SSH_AUTHORIZED_KEY
+  }
+  nodes = {
+    hayama = {
+      name = "hayama"
+      arch = "aarch64"
+      mac = "dc:a6:32:72:85:8d"
+      role = "controller"
 
-    asn = number
-    primary_ipv4 = string
-    primary_ipv6 = string
+      asn = 65001
+      primary_ipv4 = "192.168.3.1"
+      primary_ipv6 = "2400:8902:e002:5603::1"
 
-    eth0_ipv4 = string
-    eth0_ipv6 = string
-  }))
-  description = "List of nodes"
+      eth0_ipv4 = "192.168.20.2"
+      eth0_ipv6 = "fe80::2"
+    },
+    kodaka = {
+      name = "kodaka"
+      arch = "x86_64"
+      mac = "b4:2e:99:60:dd:51"
+      role = "worker"
+
+      asn = 65002
+      primary_ipv4 = "192.168.3.2"
+      primary_ipv6 = "2400:8902:e002:5603::2"
+
+      eth0_ipv4 = "192.168.20.3"
+      eth0_ipv6 = "fe80::3"
+    }
+  }
 }

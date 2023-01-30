@@ -1,5 +1,5 @@
 resource "matchbox_group" "nodes" {
-  for_each = var.nodes
+  for_each = local.nodes
   name = each.key
   profile = matchbox_profile.nodes[each.key].name
 
