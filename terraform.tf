@@ -9,6 +9,15 @@ terraform {
       version = "0.5.2"
     }
   }
+
+  backend "remote" {
+    hostname = "app.terraform.io"
+    organization = "tosuke-homelab"
+
+    workspaces {
+      name = "terraform-matchbox"
+    }
+  }
 }
 
 provider "matchbox" {
