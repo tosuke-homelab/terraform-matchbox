@@ -98,7 +98,13 @@ storage:
 
           template bgp sw {
             local as ${local_asn};
+
+            keepalive time 3;
+            hold time 9;
+            
             bfd;
+            advertise hostname;
+
             ipv4 {
               import all;
               export all;
