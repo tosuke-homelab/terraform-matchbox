@@ -41,6 +41,9 @@ locals {
     password_hash      = var.PASSWORD_HASH
     ssh_authorized_key = var.SSH_AUTHORIZED_KEY
   }
+  kubernetes = {
+    version = "v1.26.1"
+  }
   nodes = {
     hayama = {
       name = "hayama"

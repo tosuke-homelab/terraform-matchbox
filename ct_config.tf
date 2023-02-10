@@ -1,5 +1,13 @@
 locals {
   nil_config = "variant: fcos\nversion: 1.4.0\n"
+  kubeadm = {
+    "x86_64" = {
+      source = "https://dl.k8s.io/release/${local.kubernetes.version}/bin/linux/amd64/kubeadm"
+    }
+    "aarch64" = {
+      source = "https://dl.k8s.io/release/${local.kubernetes.version}/bin/linux/arm64/kubeadm"
+    }
+  }
 }
 
 data "ct_config" "nodes" {
@@ -11,6 +19,7 @@ data "ct_config" "nodes" {
     templatefile("${path.module}/butane/snnipets/node.yaml", {
       password_hash      = local.fcos.password_hash
       ssh_authorized_key = local.fcos.ssh_authorized_key,
+      kubeadm_source     = local.kubeadm[each.value.arch].source,
     }),
     templatefile("${path.module}/butane/snnipets/network.yaml", {
       primary_ipv4 = each.value.primary_ipv4,
