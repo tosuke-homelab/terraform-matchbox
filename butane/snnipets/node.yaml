@@ -17,6 +17,22 @@ storage:
         inline: |
           SELINUX=permissive
           SELINUXTYPE=targeted
+    - path: /etc/modules-load.d/k8s.conf
+      contents:
+        inline: |
+          overlay
+          br_netfilter
+    - path: /etc/sysctl.d/k8s.conf
+      contents:
+        inline: |
+          net.bridge.bridge-nf-call-iptables  = 1
+          net.bridge.bridge-nf-call-ip6tables = 1
+          net.ipv4.ip_forward                 = 1
+    - path: /etc/sysctl.d/reverse-path-filter.conf
+      contents:
+        inline: |
+          net.ipv4.conf.default.rp_filter=0
+          net.ipv4.conf.*.rp_filter=0
     - path: /opt/sbin/fetch-kubeadm
       mode: 0755
       contents:
@@ -26,7 +42,7 @@ storage:
           source="${kubeadm_source}"
           file=/usr/local/bin/kubeadm
           for i in $(seq 20); do
-            if [ $i -ge 20]; then
+            if [ $i -ge 20 ]; then
               echo "failed to fetch kubeadm"
               exit 1
             fi
@@ -36,8 +52,32 @@ storage:
             fi
             sleep 5
           done
+    - path: /opt/sbin/fetch-crictl
+      mode: 0755
+      contents:
+        inline: |
+          #!bin/sh
+
+          source="${crictl_source}"
+          file=/tmp/crictl.tar.gz
+          for i in $(seq 20); do
+            if [ $i -ge 20 ]; then
+              echo "failed to fetch crictl"
+              exit 1
+            fi
+            if curl -sfSL -o "$file" "$source"; then
+              tar -C /usr/local/bin -xzf "$file"
+              rm "$file"
+              chmod +x /usr/local/bin/crictl
+              exit 0
+            fi
+            sleep 5
+          done
+
 systemd:
   units:
+    - name: containerd.service
+      enabled: true
     - name: var-mnt-system.mount
       enabled: true
       contents: |
@@ -62,29 +102,29 @@ systemd:
 
         [Install]
         WantedBy=local-fs.target
-    - name: var-lib-containers.mount
+    - name: var-lib.mount
       enabled: true
       contents: |
         [Unit]
         After=mnt-system.mount
 
         [Mount]
-        What=/var/mnt/system/var/lib/containers
-        Where=/var/lib/containers
+        What=/var/mnt/system/var/lib
+        Where=/var/lib
         Type=none
         Options=bind
 
         [Install]
         WantedBy=local-fs.target
-    - name: var-lib-k0s.mount
+    - name: etc-kubernetes.mount
       enabled: true
       contents: |
         [Unit]
         After=mnt-system.mount
 
         [Mount]
-        What=/var/mnt/system/var/lib/k0s
-        Where=/var/lib/k0s
+        What=/var/mnt/system/etc/kubernetes
+        Where=/etc/kubernetes
         Type=none
         Options=bind
 
@@ -105,3 +145,73 @@ systemd:
 
         [Install]
         WantedBy=multi-user.target
+    - name: setup-crictl.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=Setup crictl
+        Wants=network-online.target
+        After=network-online.target
+
+        [Service]
+        Type=oneshot
+        ExecStart=/opt/sbin/fetch-crictl
+        RemainAfterExit=yes
+
+        [Install]
+        WantedBy=multi-user.target
+
+    - name: kubelet.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=Kubelet
+        Wants=network-online.target
+
+        [Service]
+        Environment=KUBELET_IMAGE=quay.io/poseidon/kubelet:${kubernetes_version}
+        
+        # This is a file that "kubeadm init" and "kubeadm join" generates at runtime, populating the KUBELET_KUBEADM_ARGS variable dynamically
+        EnvironmentFile=-/var/lib/kubelet/kubeadm-flags.env
+        # This is a file that the user can use for overrides of the kubelet args as a last resort. Preferably, the user should use
+        # the .NodeRegistration.KubeletExtraArgs object in the configuration files instead. KUBELET_EXTRA_ARGS should be sourced from this file.
+        EnvironmentFile=-/etc/default/kubelet
+        
+        ExecStartPre=/bin/mkdir -p /etc/cni/net.d
+        ExecStartPre=/bin/mkdir -p /etc/kubernetes/manifests
+        ExecStartPre=/bin/mkdir -p /opt/cni/bin
+        ExecStartPre=/bin/mkdir -p /var/lib/kubelet/volumeplugins
+        ExecStartPre=-/usr/bin/podman rm kubelet
+        ExecStart=/usr/bin/podman run --name kubelet \
+          --log-driver k8s-file \
+          --privileged \
+          --pid host \
+          --network host \
+          --volume /etc/cni/net.d:/etc/cni.net.d:ro,z \
+          --volume /etc/kubernetes:/etc/kubernetes:ro,z \
+          --volume /usr/lib/os-release:/etc/os-release:ro \
+          --volume /etc/machine-id:/etc/machine-id:ro \
+          --volume /lib/modules:/lib/modules:ro \
+          --volume /run:/run \
+          --volume /sys/fs/cgroup:/sys/fs/cgroup \
+          --volume /etc/selinux:/etc/selinux \
+          --volume /sys/fs/selinux:/sys/fs/selinux \
+          --volume /var/lib/containerd:/var/lib/containerd \
+          --volume /var/lib/kubelet:/var/lib/kubelet \
+          --volume /var/log:/var/log \
+          --volume /var/run/lock:/var/run/lock:z \
+          --volume /opt/cni/bin:/opt/cni/bin:z \
+          $KUBELET_IMAGE \
+          --bootstrap-kubeconfig=/etc/kubernetes/bootstrap-kubelet.conf \
+          --kubeconfig=/etc/kubernetes/kubelet.conf \
+          --config=/var/lib/kubelet/config.yaml \
+          $KUBELET_KUBEADM_ARGS \
+          $KUBELET_EXTRA_ARGS
+        ExecStop=-/usr/bin/podman stop kubelet
+        Delegate=yes
+        Restart=always
+        RestartSec=10
+
+        [Install]
+        WantedBy=multi-user.target
+

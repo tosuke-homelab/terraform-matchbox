@@ -17,3 +17,53 @@ storage:
       mode: 0644
       contents:
         inline: hayama
+    - path: /etc/k0s/k0s.yaml
+      mode: 0644
+      contents:
+        inline: |
+          apiVersion: k0s.k0sproject.io/v1beta1
+          kind: ClusterConfig
+          metadata:
+            name: management-cluster
+          spec:
+            api:
+              port: 16443
+              k0sApiPort: 9443
+              sans:
+                - 192.168.3.1
+                - hayama.node.tosuke.me
+            storage:
+              type: kine
+              kine:
+                dataSource: "sqlite:///var/lib/k0s/state.db?mode=rwc&_journal=WAL&cache=shared"
+systemd:
+  units:
+    - name: management-kubernetes.service
+      enabled: true
+      contents: |
+        [Unit]
+        Description=Management Kubernetes
+        Wants=network-online.target
+
+        [Service]
+        Environment=K0S_IMAGE=ghcr.io/k0sproject/k0s:v1.26.0-k0s.0
+        ExecStartPre=/bin/mkdir -p /var/lib/k0s
+        ExecStartPre=-/usr/bin/podman rm k0s
+        ExecStart=/usr/bin/podman run --name k0s \
+          --hostname k0s \
+          --dns 192.168.20.101 \
+          --privileged \
+          --cgroupns=host \
+          --volume /sys/fs/cgroup:/sys/fs/cgroup:rw \
+          --volume /etc/k0s:/etc/k0s \
+          --volume /var/lib/k0s:/var/lib/k0s \
+          -p 16443:16443 \
+          $K0S_IMAGE \
+          k0s controller --single --config /etc/k0s/k0s.yaml
+        ExecStop=-/usr/bin/podman stop k0s
+        Delegate=yes
+        Restart=always
+        RestartSec=10
+
+        [Install]
+        WantedBy=multi-user.target

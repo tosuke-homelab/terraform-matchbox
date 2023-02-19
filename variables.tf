@@ -43,6 +43,7 @@ locals {
   }
   kubernetes = {
     version = "v1.26.1"
+    crictl_version = "v1.26.0"
   }
   nodes = {
     hayama = {

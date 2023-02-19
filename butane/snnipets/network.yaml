@@ -153,6 +153,7 @@ storage:
             fi
             if curl -sfSL -o "$file" "$img"; then
               gzip -cd "$file" | /usr/bin/podman load
+              rm "$file"
               exit 0
             fi
             sleep 5

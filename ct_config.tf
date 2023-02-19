@@ -8,6 +8,14 @@ locals {
       source = "https://dl.k8s.io/release/${local.kubernetes.version}/bin/linux/arm64/kubeadm"
     }
   }
+  crictl = {
+    "x86_64" = {
+      source = "https://github.com/kubernetes-sigs/cri-tools/releases/download/${local.kubernetes.crictl_version}/crictl-${local.kubernetes.crictl_version}-linux-amd64.tar.gz"
+    }
+    "aarch64" = {
+      source = "https://github.com/kubernetes-sigs/cri-tools/releases/download/${local.kubernetes.crictl_version}/crictl-${local.kubernetes.crictl_version}-linux-arm64.tar.gz"
+    }
+  }
 }
 
 data "ct_config" "nodes" {
@@ -20,12 +28,14 @@ data "ct_config" "nodes" {
       password_hash      = local.fcos.password_hash
       ssh_authorized_key = local.fcos.ssh_authorized_key,
       kubeadm_source     = local.kubeadm[each.value.arch].source,
+      crictl_source      = local.crictl[each.value.arch].source,
+      kubernetes_version = local.kubernetes.version,
     }),
     templatefile("${path.module}/butane/snnipets/network.yaml", {
       primary_ipv4 = each.value.primary_ipv4,
       primary_ipv6 = each.value.primary_ipv6,
 
-      dns = "192.168.20.100", # FIXME: correct DNS server
+      dns = "192.168.20.100 192.168.20.101", # FIXME: correct DNS server
 
       eth0_mac  = each.value.mac,
       eth0_ipv4 = each.value.eth0_ipv4,
